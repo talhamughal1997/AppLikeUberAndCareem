@@ -60,17 +60,14 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
 
     private void getAssignedCustomer() {
         String driverId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId);
+        DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverId).child("CustomerRideId");
         driverRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
-                    Map<String, Object> map = (Map<String, Object>) dataSnapshot.getValue();
-                    if (map.get("CustomerRideId") != null) {
-                        customerId = map.get("customerRideId").toString();
+                        customerId = dataSnapshot.getValue().toString();
                         getAssignedCustomerPickUpLocation();
                     }
-                }
             }
 
             @Override
