@@ -201,7 +201,7 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
                     DatabaseReference driverRef = FirebaseDatabase.getInstance().getReference().child("Users").child("Drivers").child(driverFoundID);
                     String currentId = FirebaseAuth.getInstance().getCurrentUser().getUid();
                     HashMap map = new HashMap();
-                    map.put("customerRideId",currentId);
+                    map.put("customerRideId", currentId);
                     driverRef.updateChildren(map);
 
                     getDriverLocation();
@@ -241,22 +241,21 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
         driverLocationRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()){
+                if (dataSnapshot.exists()) {
                     List<Object> map = (List<Object>) dataSnapshot.getValue();
                     double locationLat = 0;
                     double locationLng = 0;
                     btnCallDriver.setText("Driver Found");
 
-                    if (map.get(0) != null){
+                    if (map.get(0) != null) {
                         locationLat = Double.parseDouble(map.get(0).toString());
                     }
-                    if (map.get(1) != null){
+                    if (map.get(1) != null) {
                         locationLng = Double.parseDouble(map.get(1).toString());
                     }
 
-                    LatLng driverLatLng = new LatLng(locationLat,locationLng);
-                    if (mDriverMarker!=null)
-                    {
+                    LatLng driverLatLng = new LatLng(locationLat, locationLng);
+                    if (mDriverMarker != null) {
                         mDriverMarker.remove();
                     }
                     Location loc1 = new Location("");
@@ -269,7 +268,13 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
 
                     float distance = loc1.distanceTo(loc2);
 
-                    btnCallDriver.setText("Driver Found : " + String.valueOf(distance));
+                    if (distance < 100) {
+                        btnCallDriver.setText("Driver Here");
+                    } else {
+                        btnCallDriver.setText("Driver Found : " + String.valueOf(distance));
+                    }
+
+
                     mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("Your Driver"));
                 }
             }
