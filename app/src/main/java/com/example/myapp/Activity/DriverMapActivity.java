@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
@@ -25,6 +24,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
@@ -34,7 +34,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
-import java.util.Map;
 
 public class DriverMapActivity extends FragmentActivity implements View.OnClickListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 
@@ -43,6 +42,9 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
     Location mLastLocation;
     LocationRequest mLocationRequest;
     String customerId;
+    Marker pickUpMarker;
+    DatabaseReference assignedCustomerPickUpLocationRef;
+    ValueEventListener assignedCustomerPickUpLocation;
 
     Button btnLogOut;
 
@@ -65,9 +67,17 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
-                        customerId = dataSnapshot.getValue().toString();
-                        getAssignedCustomerPickUpLocation();
+                    customerId = dataSnapshot.getValue().toString();
+                    getAssignedCustomerPickUpLocation();
+                } else {
+                    customerId = "";
+                    if (pickUpMarker != null) {
+                        pickUpMarker.remove();
                     }
+                    if (assignedCustomerPickUpLocation != null) {
+                        assignedCustomerPickUpLocationRef.removeEventListener(assignedCustomerPickUpLocation);
+                    }
+                }
             }
 
             @Override
@@ -78,11 +88,11 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
     }
 
     private void getAssignedCustomerPickUpLocation() {
-        DatabaseReference assignedCustomerPickUpLocationRef = FirebaseDatabase.getInstance().getReference().child("CustomerRequest").child(customerId).child("1");
-        assignedCustomerPickUpLocationRef.addValueEventListener(new ValueEventListener() {
+        assignedCustomerPickUpLocationRef = FirebaseDatabase.getInstance().getReference().child("CustomerRequest").child(customerId).child("1");
+        assignedCustomerPickUpLocation = assignedCustomerPickUpLocationRef.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
+                if (dataSnapshot.exists() && customerId.equals("")) {
                     List<Object> map = (List<Object>) dataSnapshot.getValue();
                     double locationLat = 0;
                     double locationLng = 0;
@@ -95,7 +105,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
 
                     LatLng driverLatLng = new LatLng(locationLat, locationLng);
 
-                    mMap.addMarker(new MarkerOptions().position(driverLatLng).title("PickUp Location"));
+                    pickUpMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("PickUp Location"));
                 }
             }
 
