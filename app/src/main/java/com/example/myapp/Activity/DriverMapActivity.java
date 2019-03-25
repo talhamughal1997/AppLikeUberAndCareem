@@ -23,6 +23,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -47,6 +48,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
     ValueEventListener assignedCustomerPickUpLocation;
 
     Button btnLogOut;
+    private boolean isLoggingOut = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,7 +107,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
 
                     LatLng driverLatLng = new LatLng(locationLat, locationLng);
 
-                    pickUpMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("PickUp Location"));
+                    pickUpMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("PickUp Location").icon(BitmapDescriptorFactory.fromResource(R.mipmap.car)));
                 }
             }
 
@@ -201,9 +203,8 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
 
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
+    private void disconnectingDriver(){
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
         String userid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("DriversAvailable");
 
@@ -214,13 +215,21 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
 
             }
         });
+    }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if(!isLoggingOut){
+            disconnectingDriver();
+        }
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btnLogOut: {
+                isLoggingOut = true;
                 FirebaseAuth.getInstance().signOut();
                 new ChangeActivities().ChangeActivity(DriverMapActivity.this, DriversLogInActivity.class);
                 DriverMapActivity.this.finish();

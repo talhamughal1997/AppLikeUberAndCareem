@@ -72,11 +72,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btnCustomers: {
                 //signIn();
                  new ChangeActivities().ChangeActivity(MainActivity.this, CustomersLogInActivity.class);
+                 finish();
                 break;
             }
 
             case R.id.btnDrivers: {
                 new ChangeActivities().ChangeActivity(MainActivity.this, DriversLogInActivity.class);
+                finish();
                 break;
             }
         }

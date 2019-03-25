@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.Button;
 
 import com.example.myapp.ChangeActivities;
+import com.example.myapp.CustomerSettingActivity;
 import com.example.myapp.R;
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
@@ -26,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -39,7 +41,7 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.HashMap;
 import java.util.List;
 
-public class CustomersMapActivity extends FragmentActivity implements View.OnClickListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+public class CustomersMapActivity extends FragmentActivity implements View.OnClickListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener{
 
     GoogleMap mMap;
     GoogleApiClient mGoogleApiClient;
@@ -47,7 +49,7 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
     LocationRequest mLocationRequest;
     LatLng pickupLocation;
     Marker mDriverMarker, pickUpMarker;
-    Button btnLogOut, btnCallDriver;
+    Button btnLogOut, btnCallDriver, btnSetting;
     GeoQuery geoQuery;
     DatabaseReference driverLocationRef;
     ValueEventListener valueEventListener;
@@ -92,20 +94,14 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
 
     @Override
     public void onLocationChanged(Location location) {
-        mLastLocation = location;
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
+        if (getApplicationContext() != null) {
+            mLastLocation = location;
 
-        String userid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("DriversAvailable");
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
 
-        GeoFire geoFire = new GeoFire(ref);
-        geoFire.setLocation(userid, new GeoLocation(location.getLatitude(), location.getLongitude()), new GeoFire.CompletionListener() {
-            @Override
-            public void onComplete(String key, DatabaseError error) {
-                Log.d("geofire", "onComplete: " + key + "   " + error);
-            }
-        });
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
+        }
     }
 
 
@@ -135,27 +131,20 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
     @Override
     protected void onStop() {
         super.onStop();
-        String userid = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("DriversAvailable");
-
-        GeoFire geoFire = new GeoFire(ref);
-        geoFire.removeLocation(userid, new GeoFire.CompletionListener() {
-            @Override
-            public void onComplete(String key, DatabaseError error) {
-
-            }
-        });
-
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btnLogOut: {
-
                 FirebaseAuth.getInstance().signOut();
                 new ChangeActivities().ChangeActivity(CustomersMapActivity.this, CustomersLogInActivity.class);
                 CustomersMapActivity.this.finish();
+                break;
+
+            }
+            case R.id.btnSetting: {
+                new ChangeActivities().ChangeActivity(CustomersMapActivity.this, CustomerSettingActivity.class);
                 break;
 
             }
@@ -198,7 +187,7 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
                     });
 
                     pickupLocation = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                    pickUpMarker = mMap.addMarker(new MarkerOptions().position(pickupLocation).title("PickUp Here"));
+                    pickUpMarker = mMap.addMarker(new MarkerOptions().position(pickupLocation).title("PickUp Here").icon(BitmapDescriptorFactory.fromResource(R.mipmap.car)));
                     btnCallDriver.setText("Getting Your Driver ....");
 
                     getCloserDriver();
@@ -213,11 +202,13 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
     private void ViewsListeners() {
         btnLogOut.setOnClickListener(this);
         btnCallDriver.setOnClickListener(this);
+        btnSetting.setOnClickListener(this);
     }
 
     private void ViewsInitialization() {
         btnLogOut = findViewById(R.id.btnLogOut);
         btnCallDriver = findViewById(R.id.btnCallDriver);
+        btnSetting = findViewById(R.id.btnSetting);
     }
 
     private void getCloserDriver() {
@@ -311,15 +302,13 @@ public class CustomersMapActivity extends FragmentActivity implements View.OnCli
                     }
 
 
-                    mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("Your Driver"));
+                    mDriverMarker = mMap.addMarker(new MarkerOptions().position(driverLatLng).title("Your Driver").icon(BitmapDescriptorFactory.fromResource(R.mipmap.car)));
                 }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-
             }
         });
-
     }
 }
