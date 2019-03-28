@@ -6,15 +6,17 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 
 import com.example.myapp.ChangeActivities;
 import com.example.myapp.R;
 import com.firebase.geofire.GeoFire;
-import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
@@ -36,7 +38,8 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.List;
 
-public class DriverMapActivity extends FragmentActivity implements View.OnClickListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+
+public class DriverMapActivity extends FragmentActivity implements View.OnClickListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener, GoogleMap.OnMapClickListener {
 
     private GoogleMap mMap;
     GoogleApiClient mGoogleApiClient;
@@ -46,7 +49,8 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
     Marker pickUpMarker;
     DatabaseReference assignedCustomerPickUpLocationRef;
     ValueEventListener assignedCustomerPickUpLocation;
-
+    LinearLayout CustomerBottomSheetLayout;
+    BottomSheetBehavior bottomSheetBehavior;
     Button btnLogOut;
     private boolean isLoggingOut = false;
 
@@ -54,12 +58,48 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_driver_map);
+        /*CustomerBottomSheetLayout = findViewById(R.id.LinearCustomerBottomSheet);*/
+        View v = findViewById(R.id.LinearCustomerBottomSheet);
+        bottomSheetBehavior = BottomSheetBehavior.from(v);
+        bottomSheetBehavior.setBottomSheetCallback(new BottomSheetBehavior.BottomSheetCallback() {
+            @Override
+            public void onStateChanged(@NonNull View view, int newState) {
+                switch (newState) {
+                    case BottomSheetBehavior.STATE_COLLAPSED:
+                        Log.d("Bottom Sheet Behaviour", "STATE_COLLAPSED");
+                        break;
+                    case BottomSheetBehavior.STATE_DRAGGING:
+                        Log.d("Bottom Sheet Behaviour", "STATE_DRAGGING");
+                        break;
+                    case BottomSheetBehavior.STATE_EXPANDED:
+                        Log.d("Bottom Sheet Behaviour", "STATE_EXPANDED");
+                        break;
+                    case BottomSheetBehavior.STATE_HIDDEN:
+                        Log.d("Bottom Sheet Behaviour", "STATE_HIDDEN");
+                        break;
+                    case BottomSheetBehavior.STATE_SETTLING:
+                        Log.d("Bottom Sheet Behaviour", "STATE_SETTLING");
+                        break;
+                }
+            }
+
+            @Override
+            public void onSlide(@NonNull View view, float v) {
+
+            }
+        });
+
         ViewsInitialization();
+
         ViewsListeners();
+
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
         getAssignedCustomer();
+
+        showCustomerBottomSheet();
+
     }
 
     private void getAssignedCustomer() {
@@ -71,6 +111,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
                 if (dataSnapshot.exists()) {
                     customerId = dataSnapshot.getValue().toString();
                     getAssignedCustomerPickUpLocation();
+                    showCustomerBottomSheet();
                 } else {
                     customerId = "";
                     if (pickUpMarker != null) {
@@ -87,6 +128,10 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
 
             }
         });
+    }
+
+    private void showCustomerBottomSheet() {
+
     }
 
     private void getAssignedCustomerPickUpLocation() {
@@ -140,6 +185,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
         }
         buildGoogleApiClient();
         mMap.setMyLocationEnabled(true);
+        mMap.setOnMapClickListener(this);
     }
 
     private synchronized void buildGoogleApiClient() {
@@ -164,7 +210,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
             GeoFire geoFireAvailable = new GeoFire(refAvailable);
             GeoFire geoFireWorking = new GeoFire(refWorking);
 
-            switch (customerId) {
+            /*switch (customerId) {
                 case "": {
                     geoFireWorking.removeLocation(userid);
                     geoFireAvailable.setLocation(userid, new GeoLocation(location.getLatitude(), location.getLongitude()));
@@ -175,7 +221,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
                     geoFireWorking.setLocation(userid, new GeoLocation(location.getLatitude(), location.getLongitude()));
                     break;
                 }
-            }
+            }*/
         }
     }
 
@@ -203,8 +249,8 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
 
     }
 
-    private void disconnectingDriver(){
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,this);
+    private void disconnectingDriver() {
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
         String userid = FirebaseAuth.getInstance().getCurrentUser().getUid();
         DatabaseReference ref = FirebaseDatabase.getInstance().getReference("DriversAvailable");
 
@@ -220,7 +266,7 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
     @Override
     protected void onStop() {
         super.onStop();
-        if(!isLoggingOut){
+        if (!isLoggingOut) {
             disconnectingDriver();
         }
     }
@@ -235,6 +281,15 @@ public class DriverMapActivity extends FragmentActivity implements View.OnClickL
                 DriverMapActivity.this.finish();
                 break;
             }
+        }
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+        if (bottomSheetBehavior.getState() == BottomSheetBehavior.STATE_COLLAPSED) {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+        } else {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
         }
     }
 }
